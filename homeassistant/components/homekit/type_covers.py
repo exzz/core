@@ -18,6 +18,7 @@ from homeassistant.components.cover import (
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_SUPPORTED_FEATURES,
+    ATTR_ASSUMED_STATE,
     SERVICE_CLOSE_COVER,
     SERVICE_OPEN_COVER,
     SERVICE_SET_COVER_POSITION,
@@ -392,14 +393,21 @@ class WindowCoveringBasic(OpeningDeviceBase, HomeAccessory):
     @callback
     def async_update_state(self, new_state):
         """Update cover position after state changed."""
-        position_mapping = {STATE_OPEN: 100, STATE_CLOSED: 0}
-        hk_position = position_mapping.get(new_state.state)
+        state = self.hass.states.get(self.entity_id)
+        if state.attributes.get(ATTR_ASSUMED_STATE):
+            _LOGGER.debug("Stateless cover, forcing position to 50%")
+            hk_position = 50
+            position_state = HK_POSITION_STOPPED
+        else:
+            position_mapping = {STATE_OPEN: 100, STATE_CLOSED: 0}
+            hk_position = position_mapping.get(new_state.state)
+            position_state = _hass_state_to_position_start(new_state.state)
+
         if hk_position is not None:
             if self.char_current_position.value != hk_position:
                 self.char_current_position.set_value(hk_position)
             if self.char_target_position.value != hk_position:
                 self.char_target_position.set_value(hk_position)
-        position_state = _hass_state_to_position_start(new_state.state)
         if self.char_position_state.value != position_state:
             self.char_position_state.set_value(position_state)
 
