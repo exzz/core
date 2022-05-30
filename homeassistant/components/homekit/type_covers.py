@@ -16,6 +16,7 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
 )
 from homeassistant.const import (
+    ATTR_ASSUMED_STATE,
     ATTR_ENTITY_ID,
     ATTR_SUPPORTED_FEATURES,
     SERVICE_CLOSE_COVER,
@@ -44,6 +45,7 @@ from .const import (
     CHAR_TARGET_DOOR_STATE,
     CHAR_TARGET_POSITION,
     CHAR_TARGET_TILT_ANGLE,
+    CONF_COVER_FORCE_REPORT_POSITION,
     CONF_LINKED_OBSTRUCTION_SENSOR,
     HK_DOOR_CLOSED,
     HK_DOOR_CLOSING,
@@ -392,8 +394,19 @@ class WindowCoveringBasic(OpeningDeviceBase, HomeAccessory):
     @callback
     def async_update_state(self, new_state):
         """Update cover position after state changed."""
-        position_mapping = {STATE_OPEN: 100, STATE_CLOSED: 0}
-        hk_position = position_mapping.get(new_state.state)
+        state = self.hass.states.get(self.entity_id)
+
+        # Force report position to CONF_COVER_FORCE_REPORT_POSITION if is set
+        if state.attributes.get(
+            CONF_COVER_FORCE_REPORT_POSITION
+        ) and state.attributes.get(ATTR_ASSUMED_STATE):
+            hk_position = state.attributes.get(CONF_COVER_FORCE_REPORT_POSITION)
+            position_state = HK_POSITION_STOPPED
+        else:
+            position_mapping = {STATE_OPEN: 100, STATE_CLOSED: 0}
+            hk_position = position_mapping.get(new_state.state)
+            position_state = _hass_state_to_position_start(new_state.state)
+
         if hk_position is not None:
             if self.char_current_position.value != hk_position:
                 self.char_current_position.set_value(hk_position)

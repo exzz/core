@@ -57,6 +57,7 @@ CONF_VIDEO_CODEC = "video_codec"
 CONF_VIDEO_MAP = "video_map"
 CONF_VIDEO_PACKET_SIZE = "video_packet_size"
 CONF_STREAM_COUNT = "stream_count"
+CONF_COVER_FORCE_REPORT_POSITION = "cover_force_report_position"
 
 # #### Config Defaults ####
 DEFAULT_SUPPORT_AUDIO = False
